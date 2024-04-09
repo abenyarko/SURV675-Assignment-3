@@ -82,6 +82,7 @@ long_data_covid19_confirmed_data <- covid19_confirmed_globa_data %>%
 #View the structure of new data set
 str(long_data_covid19_confirmed_data)
 long_data_covid19_confirmed_data
+head(long_data_covid19_confirmed_data)
 
 #New Variable that shows Days since start of Data Collection
 library(dplyr)
@@ -90,8 +91,42 @@ library(dplyr)
 long_data_covid19_confirmed_data <- long_data_covid19_confirmed_data %>%
   mutate(Days_Since_Data_Collection_Started = as.numeric(Date - min(Date)))
 
+is.na(UID_ISO_FIPS_LookUp_Table_data)
+is.na(long_data_covid19_confirmed_data)
+complete.cases(UID_ISO_FIPS_LookUp_Table_data)
+complete.cases(long_data_covid19_confirmed_data)
+
+
 #View the structure of new data set
 str(long_data_covid19_confirmed_data)
 long_data_covid19_confirmed_data$Days_Since_Data_Collection_Started
+
+
+#Save long data set as .CSV in the Clean Data folder
+write.csv(long_data_covid19_confirmed_data, file = "Data/Clean Data/Long_data_Covid19.csv")
+
+#Save edited version of UID_ISO_FIPS_LookUp_Table_data
+write.csv(UID_ISO_FIPS_LookUp_Table_data, file = "Data/Clean Data/Country_Lookup_Table.csv" )
+
+
+#Connecting to Spark
+
+#Install Java
+system("java -version")
+
+sparklyr::spark_install()
+sparklyr::spark_installed_versions()
+
+sc <- sparklyr::spark_connect(master = "local")
+
+#Load CSV into Spark
+Confirmed_Cases <- spark_read_csv(sc, "Data/Clean Data/Long_data_Covid19.csv")
+
+Country_Table <- spark_read_csv(sc, "Data/Clean Data/Country_Lookup_Table.csv")
+
+head(Confirmed_Cases)
+show(Confirmed_Cases)
+head(Country_Table)
+show(Country_Table)
 
 
