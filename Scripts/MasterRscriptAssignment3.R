@@ -129,3 +129,34 @@ head(Country_Table)
 show(Country_Table)
 
 
+#Combining both data frames within Spark
+
+Country_Confirmed_Cases <- Confirmed_Cases %>%
+  inner_join(Country_Table, by = "Country_Region")
+
+head(Country_Confirmed_Cases)
+
+str(Country_Confirmed_Cases)
+
+show(Country_Confirmed_Cases)
+
+
+#Making smaller Data frame that contains the information Germany, China, United Kingdom
+#US, Brazil and Mexico
+
+#The countries I want to look at in the new data frame
+selected_countries <- c("Germany", "China", "Japan", "United Kingdom", "US", "Brazil", "Mexico")
+
+Specific_Country_Confirmed_Cases <- Country_Confirmed_Cases %>%
+  filter(Country_Region %in% selected_countries)
+
+show(Specific_Country_Confirmed_Cases)
+
+head(Specific_Country_Confirmed_Cases)
+
+
+
+# Disconnect from Spark
+spark_disconnect(sc)
+
+
