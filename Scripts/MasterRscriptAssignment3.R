@@ -87,7 +87,6 @@ head(long_data_covid19_confirmed_data)
 #New Variable that shows Days since start of Data Collection
 library(dplyr)
 
-# Assuming your dataframe is named 'df'
 long_data_covid19_confirmed_data <- long_data_covid19_confirmed_data %>%
   mutate(Days_Since_Data_Collection_Started = as.numeric(Date - min(Date)))
 
