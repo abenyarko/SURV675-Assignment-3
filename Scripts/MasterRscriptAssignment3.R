@@ -156,6 +156,70 @@ head(Specific_Country_Confirmed_Cases)
 
 
 
+# Calculate the number of cases by country and day
+cases_by_country_day <- Specific_Country_Confirmed_Cases %>%
+  group_by(Country_Region, Date) %>%
+  mutate(total_cases = max(Confirmed_Cases)) %>%
+  ungroup() %>%
+  distinct(Country_Region, Date, total_cases)
+
+show(cases_by_country_day)
+head(cases_by_country_day)
+
+library(sparklyr)
+library(dplyr)
+library(ggplot2)
+
+
+# Convert the Spark DataFrame to a local R DataFrame
+local_cases_by_country_day <- collect(cases_by_country_day)
+
+# Convert Country_Region and Date to factors
+local_cases_by_country_day$Country_Region <- as.factor(local_cases_by_country_day$Country_Region)
+local_cases_by_country_day$Date <- as.Date(local_cases_by_country_day$Date)
+
+# Create a custom color palette for the countries
+country_colors <- rainbow(length(unique(local_cases_by_country_day$Country_Region)))
+
+#Graph Change in the number of cases per country
+# Create the ggplot
+ggplot(local_cases_by_country_day, aes(x = Date, y = total_cases, color = Country_Region)) +
+  geom_line() +
+  scale_x_date(date_labels = "%Y-%m-%d", date_breaks = "22 week") +
+  labs(title = "Change in the Number of Cases per Country",
+       x = "Date",
+       y = "Total Cases",
+       color = "Country") +
+  scale_color_manual(values = country_colors) +  # Assign custom colors
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma_format()) +
+  theme(axis.text.x = element_text(size = 7))
+ 
+library(dplyr)
+
+#Calculate rate of cases by country and date
+
+# Remove duplicate rows
+Specific_Country_Confirmed_Cases <- distinct(Specific_Country_Confirmed_Cases)
+
+# Show the first few rows of the cleaned DataFrame
+head(Specific_Country_Confirmed_Cases)
+
+#Convert population to a numeric value
+Specific_Country_Confirmed_Cases <- Specific_Country_Confirmed_Cases %>%
+  mutate(Population = as.numeric(Population))
+
+merged_data_spec_cntry <- inner_join(Specific_Country_Confirmed_Cases, cases_by_country_day, by = "Country_Region", "Date")
+show(merged_data_spec_cntry)
+str(merged_data_spec_cntry)
+summary(merged_data_spec_cntry)
+
+rate_of_cases <- merged_data_spec_cntry %>%
+  mutate(rate_of_cases = Confirmed_Cases / Population)
+show(rate_of_cases)
+
+
+
 # Disconnect from Spark
 spark_disconnect(sc)
 
