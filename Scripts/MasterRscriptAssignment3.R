@@ -283,9 +283,16 @@ model_forlogcases <- ml_linear_regression(
 
 print(model_forlogcases)
 
+# Save the model
+saveRDS(model_forlogcases, file = "linear_regression_model.rds")
+
 
 # Disconnect from Spark
 spark_disconnect(sc)
 
 #Create .CSV for data frame for Spark Regression Table
 write.csv(local_summary_data, file = "Data/Clean Data/local_sum_data.csv")
+
+session_info <- capture.output(sessionInfo())
+
+session_info
