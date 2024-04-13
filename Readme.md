@@ -38,7 +38,7 @@ We took that merged data set and prepared the data for visualization.
 
 #### *4.1.1 Change in the number of COVID-19 cases per country*
 
-![Change in the number of COVID-19 cases per country](C:/Users/abeny/Documents/SURV675-Assignment-3/Documentation/Change in the number of cases per country.png)
+![Change in the number of COVID-19 cases per country](Documentation/Change in the number of cases per country.png)
 
 This visualization depicts the evolving number of cases across the selected countries. Notably, the United States exhibited the most significant surge 
 in cases during the specified time frame, while China experienced the most 
@@ -47,7 +47,7 @@ modest increase over the same period.
 
 #### *4.1.2 Change in rate of COVID-19 cases by country*
 
-![Change in rate of COVID-19 cases by country](C:/Users/abeny/Documents/SURV675-Assignment-3/Documentation/Change in rate of cases by country.png)
+![Change in rate of COVID-19 cases by country](Documentation/Change in rate of cases by country.png)
 
 This graph illustrates the fluctuation in the rate of cases across different countries. 
 Notably, the United States demonstrated the most substantial escalation in its rate of cases during this time frame.
