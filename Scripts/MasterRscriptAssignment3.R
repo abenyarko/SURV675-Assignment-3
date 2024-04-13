@@ -14,6 +14,8 @@ install.packages("stargazer")
 install.packages("corrr")
 install.packages("dbplot")
 install.packages("packrat")
+install.packages("knitr")
+install.packages("xfun")
 library(tidyverse)
 library(dplyr)
 library(ggplot2)
@@ -140,6 +142,8 @@ str(Country_Confirmed_Cases)
 
 show(Country_Confirmed_Cases)
 
+Country_Confirmed_Cases <- Country_Confirmed_Cases[!is.na(Country_Confirmed_Cases$Population), ]
+
 
 #Making smaller Data frame that contains the information Germany, China, United Kingdom
 #US, Brazil and Mexico
@@ -148,7 +152,7 @@ show(Country_Confirmed_Cases)
 selected_countries <- c("Germany", "China", "Japan", "United Kingdom", "US", "Brazil", "Mexico")
 
 Specific_Country_Confirmed_Cases <- Country_Confirmed_Cases %>%
-  filter(Country_Region %in% selected_countries) %>%
+  filter(Country.Region %in% selected_countries) %>%
   mutate(
     Population = as.numeric(Population),
     rate_of_cases = Confirmed_Cases / Population)
@@ -157,10 +161,12 @@ show(Specific_Country_Confirmed_Cases)
 
 head(Specific_Country_Confirmed_Cases)
 
-Clean_Specific_Country_Confirmed_Cases <- Specific_Country_Confirmed_Cases %>%
-  select(-iso2, -iso3, -FIPS, -Admin2, -Province_State_y, -Lat_y, -Long_, -code3, -UID, -Combined_Key, -Province_State_y, -`_c0_x`, -`_c0_y`, -Lat_x, -Lat_y)
+Spe
 
-head(Clean_Specific_Country_Confirmed_Cases)
+Clean_Specific_Country_Confirmed_Cases <- Specific_Country_Confirmed_Cases %>%
+  select(-iso2, -iso3, -FIPS, -Admin2, -Lat_y, -Long_, -code3, -UID, -Combined_Key, -Province_State_y, -`_c0_x`, -`_c0_y`, -Lat_x, -Lat_y)
+Clean_Specific_Country_Confirmed_Cases <- Clean_Specific_Country_Confirmed_Cases[!is.na(Clean_Specific_Country_Confirmed_Cases$Population), ]
+
 
 # Calculate the number of cases by country and day
 cases_by_country_day <- Clean_Specific_Country_Confirmed_Cases %>%
@@ -208,23 +214,25 @@ library(dplyr)
 
 # Group by Country_Region and Date, and calculate the rate of cases
 rate_by_country_day <- Clean_Specific_Country_Confirmed_Cases %>%
-  group_by(Country_Region, Date) %>%
-  mutate(rate_of_cases = sum(Confirmed_Cases) / max(Population)) %>%
+  group_by(Country.Region, Date) %>%
+  mutate(rate_of_cases = sum(Confirmed_Cases) / max(Population, na.rm = TRUE)) %>%
   ungroup() %>%
-  distinct(Country_Region, Date, rate_of_cases)
+  distinct(Country.Region, Date, rate_of_cases)
+str(Clean_Specific_Country_Confirmed_Cases)
 
 head(rate_by_country_day)
 
 local_rate_by_country_day <- collect(rate_by_country_day)
 
-local_rate_by_country_day$Country_Region <- as.factor(local_rate_by_country_day$Country_Region)
+local_rate_by_country_day$Country.Region <- as.factor(local_rate_by_country_day$Country.Region)
 local_rate_by_country_day$Date <- as.Date(local_rate_by_country_day$Date)
+head(local_rate_by_country_day)
 
 library(sparklyr)
 
 #Graph of change in rate of cases by country
 
-ggplot(local_rate_by_country_day, aes(x = Date, y = rate_of_cases, color = Country_Region)) +
+ggplot(local_rate_by_country_day, aes(x = Date, y = rate_of_cases, color = Country.Region)) +
   geom_line() +
   labs(title = "Change in Rate of Cases by Country",
        x = "Date",
@@ -232,39 +240,47 @@ ggplot(local_rate_by_country_day, aes(x = Date, y = rate_of_cases, color = Count
        color = "Country") +
   theme_minimal() +
   scale_x_date(date_labels = "%Y-%m-%d", date_breaks = "30 week") +
-  scale_color_discrete(name = "Country")
+  scale_color_discrete(name = "Country") +
+  coord_cartesian(ylim = c(0, max(local_rate_by_country_day$rate_of_cases, na.rm = TRUE) * 1.1))
 
 #Run a linear regression explaining the log number of cases using country, population, and day since the start of the pandemic
 
 # Log transform the Confirmed_Cases column
 log_cases_by_country_day <- Clean_Specific_Country_Confirmed_Cases %>%
-  group_by(Country_Region, Date) %>%
+  group_by(Country.Region, Date) %>%
   mutate(log_Confirmed_Cases = log(Confirmed_Cases + 1)) %>%
   ungroup() %>%
   mutate(Confirmed_Cases = ifelse(is.na(Confirmed_Cases), 0, Confirmed_Cases),
          log_Confirmed_Cases = ifelse(log_Confirmed_Cases == 0, NA, log_Confirmed_Cases)) %>%
-  distinct(Country_Region, log_Confirmed_Cases, Population, Days_Since_Data_Collection_Started)
+  distinct(Country.Region, log_Confirmed_Cases, Population, Days_Since_Data_Collection_Started)
 
+# Remove rows with NA values in the log_Confirmed_Cases column
+log_cases_by_country_day <- log_cases_by_country_day %>%
+  filter(!is.na(log_Confirmed_Cases))
 
-head(log_cases_by_country_day)
+# Remove all rows with NA values in any column
+log_cases_by_country_day <- na.omit(log_cases_by_country_day)
 
-
+#Summary Data
 summary_data <- log_cases_by_country_day %>%
-  group_by(Country_Region) %>%
+  group_by(Country.Region) %>%
   summarize(
     Total_Log_Confirmed_Cases = sum(log_Confirmed_Cases, na.rm = TRUE),
     Total_Population = sum(Population, na.rm = TRUE),
-    Days_Since_Data_Collection_Started = min(Days_Since_Data_Collection_Started, na.rm = TRUE)
+    Days_Since_Data_Collection_Started = max(Days_Since_Data_Collection_Started, na.rm = TRUE)
   )
 
-head(summary_data)
+
 
 local_summary_data <- collect(summary_data)
 
-local_summary_data$Country_Region <- as.factor(local_summary_data$Country_Region)
+local_summary_data$Country.Region <- as.factor(local_summary_data$Country.Region)
 
-head(local_summary_data)
+# Convert Total_Population to numeric
+local_summary_data$Total_Population <- as.numeric(local_summary_data$Total_Population)
 
+# Convert Days_Since_Data_Collection_Started to numeric
+local_summary_data$Days_Since_Data_Collection_Started <- as.numeric(local_summary_data$Days_Since_Data_Collection_Started)
 
 
 # Run the linear regression model
@@ -273,7 +289,7 @@ Regression_data <- spark_read_csv(sc, "Data/Clean Data/local_sum_data.csv")
 head(Regression_data)
 
 selected_Regression_data <- Regression_data %>%
-  select(Country_Region, Total_Log_Confirmed_Cases, Total_Population, Days_Since_Data_Collection_Started)
+  select(Country.Region, Total_Log_Confirmed_Cases, Total_Population, Days_Since_Data_Collection_Started)
 
 # Perform linear regression
 model_forlogcases <- ml_linear_regression(
@@ -290,9 +306,47 @@ saveRDS(model_forlogcases, file = "linear_regression_model.rds")
 # Disconnect from Spark
 spark_disconnect(sc)
 
+#Model function in R
+#Model using lm() function in R
+model_forlogcasesR <- lm(log_Confirmed_Cases ~ Country.Region + Population + Days_Since_Data_Collection_Started, data = log_cases_by_country_day)
+
+print(model_forlogcasesR)
+
+#Model Summary
+
+# Extract tidy summary of coefficients
+tidy_summary <- tidy(model_forlogcasesR)
+
+# Extract model performance metrics
+glance_summary <- glance(model_forlogcasesR)
+
+# View the results
+print(tidy_summary)
+print(glance_summary)
+
+# Create a table using screenreg
+screenreg(model_forlogcasesR)
+readmemodel <- screenreg(model_forlogcasesR)
+
+print(readmemodel)
+
 #Create .CSV for data frame for Spark Regression Table
 write.csv(local_summary_data, file = "Data/Clean Data/local_sum_data.csv")
 
 session_info <- capture.output(sessionInfo())
 
 session_info
+
+# Append session info to RMD file
+cat("\n\n```{r}\n", session_info, "\n```", file = "Test2.rmd", append = TRUE)
+
+#Troubleshooting for .RMD file
+Country_Table <- read.csv("Data/Clean Data/Country_Lookup_Table.csv")
+Confirmed_Cases <- read.csv("Data/Clean Data/Long_data_Covid19.csv")
+
+str(Confirmed_Cases)
+str(Country_Table)
+
+#Create Readme.md
+
+
