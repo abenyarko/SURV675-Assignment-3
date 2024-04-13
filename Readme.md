@@ -106,7 +106,7 @@ China exhibits a considerably lower log confirmed cases compared to the referenc
 Population size is not a good predictor of the number of confirmed cases of
 COVID-19. As time goes by and we collect more data, it seems like the number of confirmed cases tends to go up. 
     
-### 6.1.2 *Session Info from Local R
+### 6.1.2 *Session Info from Local R*
 
 [1] "R version 4.3.1 (2023-06-16 ucrt)"                                   
  [2] "Platform: x86_64-w64-mingw32/x64 (64-bit)"                           
